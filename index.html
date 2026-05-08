@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRIS Payment Gateway</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1a1a2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: gradientShift 10s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header-icon {
+            font-size: 56px;
+            margin-bottom: 12px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            color: var(--dark);
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .product-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8eaff 100%);
+            border: 2px solid #d4d8ff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .product-name {
+            font-size: 16px;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .product-price {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .amount-input-wrapper {
+            position: relative;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .amount-input-wrapper:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .currency-prefix {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            pointer-events: none;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 16px 16px 16px 55px;
+            border: none;
+            background: transparent;
+            font-size: 20px;
+            font-weight: 600;
+            outline: none;
+            border-radius: 12px;
+        }
+
+        .amount-presets {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .preset-btn {
+            padding: 10px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn:active {
+            transform: translateY(0);
+        }
+
+        .pay-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pay-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .pay-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .pay-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Result Card */
+        .result {
+            margin-top: 24px;
+            animation: slideUp 0.4s ease;
+        }
+
+        .result-card {
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .result-card.pending {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+        }
+
+        .result-card.success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px solid #10b981;
+        }
+
+        .result-card.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 2px solid #ef4444;
+        }
+
+        .result-card.loading {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border: 2px solid #6366f1;
+        }
+
+        .qr-section {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 16px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .qr-section img {
+            max-width: 200px;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .detail-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .countdown {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--danger);
+            font-family: 'Courier New', monospace;
+            margin: 16px 0;
+            letter-spacing: 2px;
+        }
+
+        .countdown.expired {
+            color: #9ca3af;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.expired {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .action-btn.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px;
+                border-radius: 20px;
+            }
+            .product-price {
+                font-size: 32px;
+            }
+            .amount-presets {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">💳</div>
+            <h1>QRIS Payment</h1>
+            <p class="subtitle">Pembayaran instan via QRIS</p>
+        </div>
+
+        <div class="product-card">
+            <div class="product-name" id="productName">Produk Digital</div>
+            <div class="product-price" id="productPrice">Rp 50.000</div>
+        </div>
+
+        <form id="paymentForm">
+            <div class="form-group">
+                <label>Jumlah Pembayaran</label>
+                <div class="amount-input-wrapper">
+                    <span class="currency-prefix">Rp</span>
+                    <input type="number" id="amount" class="amount-input" 
+                           placeholder="0" min="1000" required>
+                </div>
+                <div class="amount-presets">
+                    <button type="button" class="preset-btn" data-amount="25000">Rp 25rb</button>
+                    <button type="button" class="preset-btn" data-amount="50000">Rp 50rb</button>
+                    <button type="button" class="preset-btn" data-amount="100000">Rp 100rb</button>
+                </div>
+            </div>
+
+            <button type="submit" class="pay-button" id="payButton">
+                💰 Bayar Sekarang
+            </button>
+        </form>
+
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            productName: 'Produk Digital Premium',
+            productPrice: 50000,
+            merchantName: 'Misteryid'
+        };
+
+        let countdownTimer = null;
+        let statusPolling = null;
+
+        // Init
+        document.getElementById('productName').textContent = CONFIG.productName;
+        document.getElementById('productPrice').textContent = 
+            `Rp ${CONFIG.productPrice.toLocaleString('id-ID')}`;
+        document.getElementById('amount').value = CONFIG.productPrice;
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('amount').value = btn.dataset.amount;
+            });
+        });
+
+        // Form submit
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const amount = document.getElementById('amount').value;
+            const payBtn = document.getElementById('payButton');
+
+            if (!amount || amount < 1000) {
+                showError('Minimal pembayaran Rp 1.000');
+                return;
+            }
+
+            // Clear previous timers
+            clearTimers();
+            
+            // Loading state
+            payBtn.disabled = true;
+            payBtn.innerHTML = '<span class="spinner"></span>Memproses...';
+            showLoading();
+
+            try {
+                const res = await fetch('/api/create-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: parseInt(amount),
+                        productName: CONFIG.productName
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    displayPayment(data);
+                    startStatusPolling(data.order_id);
+                } else {
+                    showError(data.message || 'Gagal membuat pembayaran');
+                }
+            } catch (err) {
+                showError('Gagal terhubung ke server');
+            } finally {
+                payBtn.disabled = false;
+                payBtn.innerHTML = '💰 Bayar Sekarang';
+            }
+        });
+
+        function displayPayment(data) {
+            const result = document.getElementById('result');
+            const now = new Date();
+            
+            // Parse dates
+            const createdDate = data.created_at ? new Date(data.created_at) : now;
+            const expiredDate = data.expired_time ? new Date(data.expired_time) : 
+                               new Date(now.getTime() + 3600000);
+
+            result.innerHTML = `
+                <div class="result-card pending">
+                    <h3 style="text-align:center; color:#92400e; margin-bottom:8px;">
+                        ⏳ Menunggu Pembayaran
+                    </h3>
+                    
+                    ${data.qr_image_url ? `
+                    <div class="qr-section">
+                        <img src="${data.qr_image_url}" alt="QR Code" 
+                             onerror="this.parentElement.innerHTML='<p>QR Code tidak tersedia</p>'">
+                        <p style="margin-top:8px; font-size:12px; color:#6b7280;">
+                            Scan dengan aplikasi pembayaran
+                        </p>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Order ID</span>
+                            <span class="detail-value">${data.order_id || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Merchant</span>
+                            <span class="detail-value">${data.merchant_name || CONFIG.merchantName}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Jumlah</span>
+                            <span class="detail-value">Rp ${(data.amount || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Dibuat</span>
+                            <span class="detail-value">${createdDate.toLocaleTimeString('id-ID')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Kadaluarsa</span>
+                            <span class="detail-value">${expiredDate.toLocaleTimeString('id-ID')}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="countdown" id="countdown"></div>
+                    
+                    <div style="text-align:center; margin:12px 0;">
+                        <span class="status-badge pending">⏳ Pending</span>
+                    </div>
+                    
+                    <button class="action-btn primary" onclick="checkStatus('${data.order_id}')">
+                        🔄 Cek Status
+                    </button>
+                </div>
+            `;
+
+            result.style.display = 'block';
+            startCountdown(expiredDate);
+            result.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function startCountdown(expiryDate) {
+            const display = document.getElementById('countdown');
+            if (!display) return;
+
+            function update() {
+                const now = new Date().getTime();
+                const distance = expiryDate.getTime() - now;
+
+                if (distance < 0) {
+                    display.textContent = '⏰ KADALUARSA';
+                    display.classList.add('expired');
+                    updateStatusBadge('expired', '❌ Expired');
+                    clearInterval(countdownTimer);
+                    return;
+                }
+
+                const h = Math.floor(distance / 3600000);
+                const m = Math.floor((distance % 3600000) / 60000);
+                const s = Math.floor((distance % 60000) / 1000);
+                
+                display.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }
+
+            update();
+            countdownTimer = setInterval(update, 1000);
+        }
+
+        async function startStatusPolling(orderId) {
+            statusPolling = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/check-status?order_id=${orderId}`);
+                    const data = await res.json();
+                    
+                    if (data.status === 'paid') {
+                        clearInterval(statusPolling);
+                        updateStatusBadge('paid', '✅ LUNAS');
+                        clearInterval(countdownTimer);
+                    } else if (data.status === 'expired') {
+                        clearInterval(statusPolling);
+                        updateStatusBadge('expired', '❌ Expired');
+                    }
+                } catch (err) {
+                    console.log('Polling error:', err);
+                }
+            }, 10000); // Every 10 seconds
+        }
+
+        async function checkStatus(orderId) {
+            try {
+                const res = await fetch(`/api/check-status?order_id=${orderId}`);
+                const data = await res.json();
+                
+                if (data.status === 'paid') {
+                    updateStatusBadge('paid', '✅ LUNAS');
+                    clearInterval(countdownTimer);
+                    clearInterval(statusPolling);
+                    alert('✅ Pembayaran berhasil!');
+                } else if (data.status === 'expired') {
+                    updateStatusBadge('expired', '❌ Expired');
+                    clearInterval(countdownTimer);
+                    alert('❌ Pembayaran kadaluarsa');
+                } else {
+                    alert('⏳ Status: Menunggu pembayaran');
+                }
+            } catch (err) {
+                alert('Gagal mengecek status');
+            }
+        }
+
+        function updateStatusBadge(status, text) {
+            const badge = document.querySelector('.status-badge');
+            if (badge) {
+                badge.className = `status-badge ${status}`;
+                badge.textContent = text;
+            }
+        }
+
+        function showLoading() {
+            const result = document.getElementById('result');
+            result.innerHTML = `
+                <div class="result-card loading" style="text-align:center;">
+                    <span class="spinner"></span>
+                    <p style="margin-top:12px; color:#3730a3;">Menghubungkan ke payment gateway...</p>
+                </div>
+            `;
+            result.style.display = 'block';
+        }
+
+        function showError(msg) {
+            const result = document.getElementById('result');
+            result.innerHTML = `
+                <div class="result-card error">
+                    <h3 style="color:#991b1b; text-align:center;">❌ Gagal</h3>
+                    <p style="text-align:center; margin:8px 0;">${msg}</p>
+                    <button class="action-btn danger" onclick="location.reload()">
+                        🔄 Coba Lagi
+                    </button>
+                </div>
+            `;
+            result.style.display = 'block';
+        }
+
+        function clearTimers() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (statusPolling) clearInterval(statusPolling);
+        }
+
+        window.addEventListener('beforeunload', clearTimers);
+    </script>
+</body>
+</html>
